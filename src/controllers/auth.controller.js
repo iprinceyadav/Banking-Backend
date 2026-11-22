@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken")
  * - POST /api/auth/register
  */
 
-async function userRegistercontroller(res,req){
+async function userRegistercontroller(req,res){
     const {email,name,password} = req.body
 
     const isExists = await userModel.findOne({
@@ -24,7 +24,7 @@ async function userRegistercontroller(res,req){
     })
     const token = jwt.sign({userId:user._id},process.env.JWT_SECRET,{expiresIn:"2d"})
 
-    res.cookies("token",token)
+    res.cookie("token",token)
 
     res.send(201).json({
         user:{
@@ -36,4 +36,41 @@ async function userRegistercontroller(res,req){
     })
 }
 
-module.exports = {userRegistercontroller}
+/**
+ * - User Login Controller 
+ * POST  /api/auth /login
+*/
+
+async function userLoginController(req,res){
+    const {email,password} =req.body
+
+    const user = await userModel.findOne({email})
+
+    if(!user){
+        return res.status(401).json({
+            message:"Email or Password is Invalid"
+        })
+    }
+    const isValidPassword = await user.comparePassword(password)
+    if(!isValidPassword){
+        return res.status(401).json({
+            message:"Email or Password is INVLAID"
+        })
+    }
+    const token = jwt.sign({userId:user._id},process.env.JWT_SECRET,{expiresIn:"2d"})
+
+    res.cookie("token",token)
+    res.send(200).json({
+        user:{
+            _id:user._id,
+            email:user.email,
+            name:user.name
+        },
+        token
+    })
+}
+
+module.exports = {
+    userRegistercontroller,
+    userLoginController
+}
